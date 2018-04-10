@@ -60,6 +60,18 @@ extern void PAIR_ZZZ_ate(FP12_YYY *r,ECP2_ZZZ *P,ECP_ZZZ *Q);
 	@param S ECP instance, an element of G1
  */
 extern void PAIR_ZZZ_double_ate(FP12_YYY *r,ECP2_ZZZ *P,ECP_ZZZ *Q,ECP2_ZZZ *R,ECP_ZZZ *S);
+/**	@brief Calculate Miller loop for Optimal ATE triple-pairing e(P,Q).e(R,S).e(T,U)
+ *
+	Faster than calculating three separate pairings
+	@param r FP12 result of the pairing calculation e(P,Q).e(R,S), an element of GT
+	@param P ECP2 instance, an element of G2
+	@param Q ECP instance, an element of G1
+	@param R ECP2 instance, an element of G2
+	@param S ECP instance, an element of G1
+	@param T ECP2 instance, an element of G2
+	@param U ECP instance, an element of G1
+ */
+extern void PAIR_ZZZ_triple_ate(FP12_YYY *r,ECP2_ZZZ *P,ECP_ZZZ *Q,ECP2_ZZZ *R,ECP_ZZZ *S,ECP2_ZZZ *T,ECP_ZZZ *U);
 /**	@brief Final exponentiation of pairing, converts output of Miller loop to element in GT
  *
 	Here p is the internal modulus, and r is the group order

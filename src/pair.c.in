@@ -367,6 +367,165 @@ void PAIR_ZZZ_double_ate(FP12_YYY *r,ECP2_ZZZ *P,ECP_ZZZ *Q,ECP2_ZZZ *R,ECP_ZZZ 
 #endif
 }
 
+/* Optimal R-ate triple pairing e(P,Q).e(R,S).e(T,U) */
+void PAIR_ZZZ_triple_ate(FP12_YYY *r,ECP2_ZZZ *P,ECP_ZZZ *Q,ECP2_ZZZ *R,ECP_ZZZ *S,ECP2_ZZZ *T,ECP_ZZZ *U)
+{
+    FP2_YYY X;
+    BIG_XXX x,n,n3;
+    FP_YYY Qx,Qy,Sx,Sy,Ux,Uy;
+    int i,nb,bt;
+    ECP2_ZZZ A,B,C;
+    FP12_YYY lv;
+#if PAIRING_FRIENDLY_ZZZ==BN
+    ECP2_ZZZ K;
+#endif
+    FP_YYY_rcopy(&Qx,Fra_YYY);
+    FP_YYY_rcopy(&Qy,Frb_YYY);
+    FP2_YYY_from_FPs(&X,&Qx,&Qy);
+
+#if SEXTIC_TWIST_ZZZ==M_TYPE
+    FP2_YYY_inv(&X,&X);
+    FP2_YYY_norm(&X);
+#endif
+
+    BIG_XXX_rcopy(x,CURVE_Bnx_ZZZ);
+
+#if PAIRING_FRIENDLY_ZZZ==BN
+    BIG_XXX_pmul(n,x,6);
+#if SIGN_OF_X_ZZZ==POSITIVEX
+    BIG_XXX_inc(n,2);
+#else
+    BIG_XXX_dec(n,2);
+#endif
+#else
+    BIG_XXX_copy(n,x);
+#endif
+
+    BIG_XXX_norm(n);
+    BIG_XXX_pmul(n3,n,3);
+    BIG_XXX_norm(n3);
+
+    FP_YYY_copy(&Qx,&(Q->x));
+    FP_YYY_copy(&Qy,&(Q->y));
+
+    FP_YYY_copy(&Sx,&(S->x));
+    FP_YYY_copy(&Sy,&(S->y));
+
+    FP_YYY_copy(&Ux,&(U->x));
+    FP_YYY_copy(&Uy,&(U->y));
+
+    ECP2_ZZZ_copy(&A,P);
+    ECP2_ZZZ_copy(&B,R);
+    ECP2_ZZZ_copy(&C,T);
+    FP12_YYY_one(r);
+    nb=BIG_XXX_nbits(n3);
+
+    /* Main Miller Loop */
+    for (i=nb-2; i>=1; i--)
+    {
+        FP12_YYY_sqr(r,r);
+        PAIR_ZZZ_line(&lv,&A,&A,&Qx,&Qy);
+        FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+        PAIR_ZZZ_line(&lv,&B,&B,&Sx,&Sy);
+        FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+        PAIR_ZZZ_line(&lv,&C,&C,&Ux,&Uy);
+        FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+        bt=BIG_XXX_bit(n3,i)-BIG_XXX_bit(n,i);
+        //bt=BIG_XXX_bit(n,i);
+        if (bt==1)
+        {
+            PAIR_ZZZ_line(&lv,&A,P,&Qx,&Qy);
+            FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+            PAIR_ZZZ_line(&lv,&B,R,&Sx,&Sy);
+            FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+            PAIR_ZZZ_line(&lv,&C,T,&Ux,&Uy);
+            FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+        }
+
+        if (bt==-1)
+        {
+            ECP2_ZZZ_neg(P);
+            PAIR_ZZZ_line(&lv,&A,P,&Qx,&Qy);
+            FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+            ECP2_ZZZ_neg(P);
+
+            ECP2_ZZZ_neg(R);
+            PAIR_ZZZ_line(&lv,&B,R,&Sx,&Sy);
+            FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+            ECP2_ZZZ_neg(R);
+
+            ECP2_ZZZ_neg(T);
+            PAIR_ZZZ_line(&lv,&C,T,&Ux,&Uy);
+            FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+            ECP2_ZZZ_neg(T);
+        }
+
+        //FP12_YYY_sqr(r,r);
+
+    }
+
+    // PAIR_ZZZ_line(&lv,&A,&A,&Qx,&Qy);
+    // FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+    // PAIR_ZZZ_line(&lv,&B,&B,&Sx,&Sy);
+    // FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+    // if (BIG_XXX_parity(n))
+    // {
+    //     PAIR_ZZZ_line(&lv,&A,P,&Qx,&Qy);
+    //     FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+    //     PAIR_ZZZ_line(&lv,&B,R,&Sx,&Sy);
+    //     FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+    // }
+
+    /* R-ate fixup required for BN curves */
+#if PAIRING_FRIENDLY_ZZZ==BN
+
+#if SIGN_OF_X_ZZZ==NEGATIVEX
+    FP12_YYY_conj(r,r);
+    ECP2_ZZZ_neg(&A);
+    ECP2_ZZZ_neg(&B);
+    ECP2_ZZZ_neg(&C);
+#endif
+
+    ECP2_ZZZ_copy(&K,P);
+    ECP2_ZZZ_frob(&K,&X);
+
+    PAIR_ZZZ_line(&lv,&A,&K,&Qx,&Qy);
+    FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+    ECP2_ZZZ_frob(&K,&X);
+    ECP2_ZZZ_neg(&K);
+    PAIR_ZZZ_line(&lv,&A,&K,&Qx,&Qy);
+    FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+    ECP2_ZZZ_copy(&K,R);
+    ECP2_ZZZ_frob(&K,&X);
+
+    PAIR_ZZZ_line(&lv,&B,&K,&Sx,&Sy);
+    FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+    ECP2_ZZZ_frob(&K,&X);
+    ECP2_ZZZ_neg(&K);
+    PAIR_ZZZ_line(&lv,&B,&K,&Sx,&Sy);
+    FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+
+    ECP2_ZZZ_copy(&K,T);
+    ECP2_ZZZ_frob(&K,&X);
+
+    PAIR_ZZZ_line(&lv,&C,&K,&Ux,&Uy);
+    FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+    ECP2_ZZZ_frob(&K,&X);
+    ECP2_ZZZ_neg(&K);
+    PAIR_ZZZ_line(&lv,&C,&K,&Ux,&Uy);
+    FP12_YYY_smul(r,&lv,SEXTIC_TWIST_ZZZ);
+#endif
+}
+
 /* final exponentiation - keep separate for multi-pairings and to avoid thrashing stack */
 void PAIR_ZZZ_fexp(FP12_YYY *r)
 {
